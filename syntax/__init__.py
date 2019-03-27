@@ -9,13 +9,17 @@ Finished features:
 - it method getting and mapping via `it` and `|`, `|-`
 - github importer
 
+Being done:
+- extension methods for common types, i.e. replace for lists
+
 To do:
 - return() <- returns with after_return code
 - fancy use of & (sending to thread?)
 - fancy use of ^
 - abbrevation for Pipeline(function)
-- extension methods for common types, i.e. replace for lists
-
+- parallel (multithread, multiprocessing)
+- use the pipe from syntax sugar to make longer pipes... (but do not duplicate)
+- add tensor comprehensions
 """
 
 from syntax.anon import new
