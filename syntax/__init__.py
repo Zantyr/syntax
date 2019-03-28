@@ -11,6 +11,10 @@ Finished features:
 
 Being done:
 - extension methods for common types, i.e. replace for lists
+- https://rszalski.github.io/magicmethods/#pickling <- test for difference between __getattr_ and __getattribute__ and implement the missing ones
+- '_ipython_canary_method_should_not_exist_ for improved python display
+- should not override __repr__ -> make it clear what is it...
+- use https://docs.python.org/3/library/typing.html   (but is provisional)
 
 To do:
 - return() <- returns with after_return code
