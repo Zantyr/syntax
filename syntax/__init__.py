@@ -30,3 +30,4 @@ from syntax.anon import new
 from syntax.decorators import typed, constructor
 from syntax.maps import it, _, Pipeable
 from syntax.snip import remote_import
+import syntax.utils as utils
