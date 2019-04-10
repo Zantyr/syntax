@@ -119,3 +119,24 @@ class decorator(object):
 
     def __ror__(self):
         pass
+
+
+class Show:
+    def __str__(self):
+        return "\n".join(["{}: {}".format(k, v) for k, v in dict(vars(self)).items() if not k.startswith("_")])
+
+    def __repr__(self):
+        return "\n".join(["{}: {}".format(k, v) for k, v in dict(vars(self)).items() if not k.startswith("_")])
+
+    def __format__(self):
+        return "\n".join(["{}: {}".format(k, v) for k, v in dict(vars(self)).items() if not k.startswith("_")])
+
+    class Meta(type):
+        def __str__(cls):
+            return "\n".join(["{}: {}".format(k, v) for k, v in dict(vars(cls)).items() if not k.startswith("_")])
+    
+        def __repr__(cls):
+            return "\n".join(["{}: {}".format(k, v) for k, v in dict(vars(cls)).items() if not k.startswith("_")])
+    
+        def __format__(cls):
+            return "\n".join(["{}: {}".format(k, v) for k, v in dict(vars(cls)).items() if not k.startswith("_")])

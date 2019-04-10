@@ -8,6 +8,18 @@ Finished features:
 - dataclass init with normal classes with `@constructor`
 - it method getting and mapping via `it` and `|`, `|-`
 - github importer
+- Show and ShowMeta
+- Persistence
+
+Additional subprograms
+- DropInServer
+
+Additional subprograms TBD
+- File Synchronizer
+- NPC - numpy C extensions made easy (plain C pointers)
+- has it changed? - synchronizing changed files
+- Config Manager
+
 
 Being done:
 - extension methods for common types, i.e. replace for lists
@@ -24,10 +36,11 @@ To do:
 - parallel (multithread, multiprocessing)
 - use the pipe from syntax sugar to make longer pipes... (but do not duplicate)
 - add tensor comprehensions
+- python dictionaries that can be indexed with dot
 """
 
 from syntax.anon import new
-from syntax.decorators import typed, constructor
+from syntax.decorators import typed, constructor, Show
 from syntax.maps import it, _, Pipeable
 from syntax.snip import remote_import
 import syntax.utils as utils

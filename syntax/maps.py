@@ -132,9 +132,8 @@ class DelayedAccessor(Pipeable):
 
     def __extended_syntax(self, v):
         default = lambda x: self._eval(x).__getattribute__(v)
-        if v == "replace":
-            if isinstance(v, list):
-                return lambda *args: list_replace(x, *args)
+        if v == "replace" and isinstance(v, list):
+            return lambda *args: list_replace(x, *args)
         return default
 
 

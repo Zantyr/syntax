@@ -32,3 +32,10 @@ class PersistentState(_UserDict):
 
     def __iter__(self):
         return self.data.__iter__()
+
+
+def zdict(*args):
+    return dict(zip(*args))
+
+def lrange(arg):
+    return range(len(arg))
