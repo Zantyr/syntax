@@ -9,7 +9,7 @@ Finished features:
 - it method getting and mapping via `it` and `|`, `|-`
 - github importer
 - Show and ShowMeta
-- Persistence
+- Persistence (need to add monitoring)
 
 Additional subprograms
 - DropInServer
@@ -19,7 +19,7 @@ Additional subprograms TBD
 - NPC - numpy C extensions made easy (plain C pointers)
 - has it changed? - synchronizing changed files
 - Config Manager
-
+- installer for subprograms
 
 Being done:
 - extension methods for common types, i.e. replace for lists

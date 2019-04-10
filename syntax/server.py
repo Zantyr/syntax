@@ -4,6 +4,8 @@ import json
 import os
 import re
 import subprocess
+import tempfile
+
 
 class DropInServer:
     """
@@ -34,6 +36,7 @@ class DropInServer:
         self.app = flask.Flask(__name__)
         @self.app.route('/<page>', methods=["GET", "POST"])
         def index(page):
+            paths = []
             for epoint in self.endpoints:
                 if page.startswith(epoint["route"]):
                     break
@@ -44,9 +47,17 @@ class DropInServer:
                     data = flask.request.get_json()
                 else:
                     data = flask.request.form
+                for fobj in flask.request.files:
+                    if fobj.filename:
+                        path = tempfile.mkstemp()[1]
+                        fobj.save(path)
             else:
                 data = {}
-            return self.call(epoint, page, data)
+            try:
+                return self.call(epoint, page, data)
+            finally:
+                for path in paths:
+                    os.remove(path)
         self.app.run(self.config["address"], self.config["port"])
 
     def call(self, epoint, page, data):
