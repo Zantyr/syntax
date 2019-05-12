@@ -1,3 +1,4 @@
+import copy as _copy
 import os as _os
 import pickle as _pickle
 from collections import UserDict as _UserDict
@@ -39,3 +40,42 @@ def zdict(*args):
 
 def lrange(arg):
     return range(len(arg))
+
+
+class Frame(_UserDict):
+    """
+    For interpreter development - frame for function call and so on
+    """
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.data = data
+
+    def setv(self, k, v):
+        while self.parent is not None:
+            self = self.parent
+        self.data[k] = v
+
+    def new_frame(self):
+        return Frame(self)
+
+    def copy(self):
+        return _copy.copy(self)
+
+    def __getitem__(self, k):
+        if k in self.data.keys():
+            return self.data[k]
+        if self.parent is not None:
+            return self.parent[k]
+        raise KeyError("No such item as {}".format(k))
+
+    def __setitem__(self, k, v):
+        self.data[k] = v
+
+    def __delitem__(self, k):
+        del self.data[k]
+
+    def __contains__(self, what):
+        return self.data.__contains__(what)
+
+    def __iter__(self):
+        return self.data.__iter__()
