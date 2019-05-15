@@ -39,3 +39,12 @@ def zdict(*args):
 
 def lrange(arg):
     return range(len(arg))
+
+def timer(timed):
+    """@timeit but logs instead of printing"""
+    def timer_wrapper(*args, **kwargs):
+        start_time = time.time()
+        timed(*args, **kwargs)
+        end_time = time.time() - start_time
+        logger.info('%s done in %s seconds', timed.__name__, round(end_time, 2))
+    return timer_wrapper
