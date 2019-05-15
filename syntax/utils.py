@@ -1,3 +1,4 @@
+import copy as _copy
 import os as _os
 import pickle as _pickle
 from collections import UserDict as _UserDict
@@ -48,3 +49,42 @@ def timer(timed):
         end_time = time.time() - start_time
         logger.info('%s done in %s seconds', timed.__name__, round(end_time, 2))
     return timer_wrapper
+
+
+class Frame(_UserDict):
+    """
+    For interpreter development - frame for function call and so on
+    """
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.data = data
+
+    def setv(self, k, v):
+        while self.parent is not None:
+            self = self.parent
+        self.data[k] = v
+
+    def new_frame(self):
+        return Frame(self)
+
+    def copy(self):
+        return _copy.copy(self)
+
+    def __getitem__(self, k):
+        if k in self.data.keys():
+            return self.data[k]
+        if self.parent is not None:
+            return self.parent[k]
+        raise KeyError("No such item as {}".format(k))
+
+    def __setitem__(self, k, v):
+        self.data[k] = v
+
+    def __delitem__(self, k):
+        del self.data[k]
+
+    def __contains__(self, what):
+        return self.data.__contains__(what)
+
+    def __iter__(self):
+        return self.data.__iter__()
