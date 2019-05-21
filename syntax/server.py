@@ -6,6 +6,68 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
+import time
+
+
+class AuthExtension:
+    """
+    Contains a session info that is sweeped periodically
+    Should be configurable externally
+    Should add login callback to the server
+    TODO: fill login and logout callback
+    TODO: create default creds holder
+    TODO: create constructor parameters
+
+    TODO: use cherryPy server: https://github.com/tiagohillebrandt/bottle-ssl/blob/master/server.py
+        to do HTTPS on this port
+    """
+    def __init__(self, server):
+        self.server = server
+        self.secret_holder = ...
+        self.sessions = {}
+        self.session_validity_period = 7200
+        self.period = 60
+        self.lock = threading.Lock()
+        self.thread = threading.Thread(target=self.harvest)
+        self.thread.daemon = True
+        self.thread.start()
+        self.server.internal_endpoints.append({
+            "about": "Pass user and pwd to receive token to built-in Auth engine", 
+            "route": "auth_login",
+            "callback": self.login
+        })
+        self.server.internal_endpoints.append({
+            "about": "Pass token to terminate session in the built-in Auth engine",
+            "route": "auth_logout",
+            "callback": self.logout
+        })
+
+    def login(self, epoint, page, data):
+        pass
+
+    def logout(self, epoint, page, data):
+        pass
+
+    def __call__(self, callback):
+        def wrapped(epoint, page, data):
+            token = data.get('token')
+            if token is None:
+                bottle.abort(401, "Authentication token not present")
+            with self.lock:
+                if token not in self.sessions.keys():
+                    bottle.abort(403, "Your token either expired or is invalid; either way resource is unaccessible")
+                data["user"] = self.sessions[token]["user"]
+            del data["token"]
+            callback(epoint, page, data)
+        return wrapped
+
+    def harvest(self):
+        while True:
+            time.sleep(self.period)
+            with self.lock:
+                now = time.time()
+                self.sessions = {k: v for k, v in self.sessions.items() if v["expiration"] < now}            
 
 
 class DropInServer:
@@ -30,6 +92,7 @@ class DropInServer:
                 config_path = DropInServer._default_cfg_path
             with open(config_path, "r") as f:
                 self.config = json.load(f)
+        self.internal_endpoints = []  # used to ...
         self.extensions = {}
         if self.config.get("extensions"):
             for k, v in self.config.items():
@@ -42,7 +105,9 @@ class DropInServer:
         @bottle.get('/')
         def all_methods():
             bottle.response.content_type="application/json"
-            return json.dumps(self.endpoints)
+            epoints = self.endpoints.copy()
+            epoints.update(self.internal_endpoints)
+            return json.dumps(epoints)
 
         @bottle.route('/<page>', method=["GET", "POST"])
         def index(page):
@@ -51,10 +116,14 @@ class DropInServer:
                 if page.startswith(epoint["route"]):
                     break
             else:
-                bottle.response.content_type = "text/plain; charset=utf-8"
-                bottle.abort(404, "No such method")
+                for epoint in self.internal_endpoints:
+                    if page.startswith(epoint["route"]):
+                        break
+                else:
+                    bottle.response.content_type = "text/plain; charset=utf-8"
+                    bottle.abort(404, "No such method")
             if bottle.request.method == 'POST':
-                if bottle.request.content_type == 'application/json; charset=utf-8':
+                if bottle.request.content_type.lower().startswith('application/json'):
                     data = bottle.request.json
                 else:
                     data = bottle.request.form
@@ -65,7 +134,10 @@ class DropInServer:
             else:
                 data = {}
             try:
-                this_call = self.call
+                if epoint.get("executable") is not None:
+                    this_call = self.call
+                else:
+                    this_call = epoint["callback"]
                 if epoint.get("extensions"):
                     for extension in epoint["extensions"]:
                         this_call = self.extensions[extension](this_call)
@@ -101,6 +173,26 @@ class DropInServer:
         Import addon; if unavailable, get it from path. Paths may be interpreted
         as Python imports or installable snippets.
         """
+        if path == "auth":
+            self.extensions[key] = AuthExtension(self)
+        elif isinstance(path, list) and path[0] == "auth":
+            password_manager = path[1]
+            password_file = path[2]
+            self.extensions[key] = AuthExtension(self, pwd_mgr=password_manager, pwd_file=password_file)
+        elif isinstance(path, str) or isinstance(path, list):
+            if isinstance(path, list):
+                path, args = path[0], path[1:]
+            else:
+                args = []
+            try:
+                path = path.split(".")
+                path = ".".join(path[:-1]), path[-1]
+                module = __import__(path[0])
+                self.extensions[key] = module.__dict__[path[1]](self, *args)
+            except:
+                raise NotImplementedError("Remote import should be doable")
+        else:
+            raise ValueError("Incorrect path for an import")
 
     @classmethod
     def cli(cls, *args):

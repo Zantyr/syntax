@@ -9,6 +9,19 @@ def typecheck(obj, t):
             return True
     return False
 
+def require(template, value, prune=False):
+    """
+    Compare types of struct and prune them if necessary
+    """
+    for key, typ in template.items():
+        v = value.get(key)
+        if not isinstance(v, typ):
+            raise AssertionError("{} is not of type {}".format(key, typ))
+    if prune:
+        return {k: value[k] for k in template.keys()}
+    return value
+
+
 def constructor(init):
     """
     Set all parameters from the __init__ as in every normal
