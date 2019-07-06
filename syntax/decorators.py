@@ -153,3 +153,67 @@ class Show:
     
         def __format__(cls):
             return "\n".join(["{}: {}".format(k, v) for k, v in dict(vars(cls)).items() if not k.startswith("_")])
+
+
+class Equatable:
+    """
+    Mixin to make == operator for things
+    """
+    def __eq__(self, other):
+        keys = set(other.__dict__.keys()) | set(self.__dict__.keys())
+        if type(self) != type(other):
+            return False
+        try:
+            for key in keys:
+                if self.__dict__[key] != other.__dict__[key]:
+                    return False
+        except KeyError:
+            return False
+        return True
+
+# Slots do not work easily...
+# Need to make a mixin for sure to do in an SQLAlchemy way
+
+"""
+class _Slot:
+    pass
+
+
+def slot(name, default=None):
+    # This function should create a slot in a class that has getter and setter
+    # If this does not work, create a Settable class
+    slot = lambda self: getattr(self, "_" + name)
+    slot.__name__ = name
+    slot = property(slot)
+    setter = lambda self, v: setattr(self, "_" + name, v)
+    slot.setter(setter)
+    slot.__class__ = type('Slot', (property, _Slot), {})
+    slot.default = default
+    slot.name = name
+    return slot
+
+class Slottable:
+    def __init__(self):
+        for item, value in self.__class__.__dict__.items():
+            if isinstance(value, _Slot):
+                self.__dict__["_" + value.name] = value.default
+"""
+
+_IMPLICIT_DICT = {}
+def implicit(klass):
+    """
+    Generates singletons of a given class.
+    """
+    name = "{}.{}".format(klass.__module__, klass.__name__)
+    default = _IMPLICIT_DICT.get(name)
+    if isinstance(klass, type):
+        if default:
+            return default
+        if hasattr(klass, "_default"):
+            default = klass._default
+        else:
+            default = klass()
+    else:
+        default = klass
+    _IMPLICIT_DICT[name] = default
+    return default

@@ -36,4 +36,4 @@ class Constructor(unittest.TestCase):
         instance = X(3)
         assert instance.a == 3
 
-unittest.main(module="syntax.tests", exit=False)
+unittest.main(module="tests", exit=False)

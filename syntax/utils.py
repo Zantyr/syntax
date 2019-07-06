@@ -1,10 +1,18 @@
 import copy as _copy
 import os as _os
 import pickle as _pickle
+import shutil as _shutil
+import sys as _sys
+import tempfile as _tempfile
+import zipfile as _zipfile
+
 from collections import UserDict as _UserDict
 
 
 class PersistentState(_UserDict):
+    """
+    Creates a dict that autoserializes to the filesystem
+    """
     def __init__(self, path):
         self.path = path
         if _os.path.isfile(path):
@@ -34,6 +42,16 @@ class PersistentState(_UserDict):
     def __iter__(self):
         return self.data.__iter__()
 
+
+class Cache:
+    def __init__(self, path):
+        self.path = path
+
+    def get_hash(self, hash):
+        if _os.path.exists(_os.path.join(self.path, str(hash))):
+            return _os.path.exists(_os.path.join(self.path, str(hash)))
+        return None
+        
 
 def zdict(*args):
     return dict(zip(*args))
@@ -88,3 +106,72 @@ class Frame(_UserDict):
 
     def __iter__(self):
         return self.data.__iter__()
+
+
+class TempEnv:
+    """
+    Create a temporary directory. If path is given, the temporary dir is zipped and unzipped
+    accordingly.
+    """
+    def __init__(self, path=None):
+        self.path = None
+
+    def __enter__(self):
+        tmpdname = _tempfile.mkdtemp()
+        if self.path is not None:
+            with _zipfile.ZipFile(self.path) as f:
+                f.extractall(tmpdname)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.path is not None:
+            with _zipfile.ZipFile(self.path, 'w') as f:
+                for root, folders, files in _os.walk():
+                    for file in files:
+                        f.write(_os.path.join(root, file))
+        _shutil.rmtree(tmpdname)
+
+
+"""
+Requirements for LISP VM
+Correctly allocate and deallocate things at enter, exit or rewrite
+Since functions are stateless, there is no need to manage external state really - the creator
+is responsible for deletion unless the item is returned
+Create incremental items -> when Mutated object is returned, the original is also undeallocated
+
+Also, refcount GC...
+"""
+
+
+
+def yes_no(question):
+    """
+    Ask a yes/no question
+    """
+    prompt = " [y/n] "
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    while True:
+        _sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if choice in valid:
+            return valid[choice]
+        else:
+            _sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
+
+
+
+class DotDict(dict):
+    """
+    Convenience collection
+    """
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            return super().__getattr__(self, key)
+
+    def __setattr__(self, key, value):
+        if hasattr(self, key):
+            return super().__setattr__(self, key, value)
+        self[key] = value
