@@ -29,6 +29,7 @@ Being done:
 - use https://docs.python.org/3/library/typing.html   (but is provisional)
 
 To do:
+- serializer ....
 - return() <- returns with after_return code
 - fancy use of & (sending to thread?)
 - fancy use of ^
@@ -40,7 +41,7 @@ To do:
 """
 
 from syntax.anon import new
-from syntax.decorators import typed, constructor, Show
+from syntax.decorators import typed, constructor, Show, implicit
 from syntax.maps import it, _, Pipeable
 from syntax.snip import remote_import
-import syntax.utils as utils
+from syntax.utils import StateMachine, DotDict, TempEnv, PersistentState

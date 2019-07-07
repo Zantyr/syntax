@@ -37,8 +37,10 @@ def constructor(init):
                 keys = spec.kwonlyargs[:len(args) - len(spec.args)]
                 settings.update(dict(zip(keys, args[len(spec.args):])))
         settings.update(kwargs)
-        settings.update({k:v for k, v in zip(reversed(spec.args), reversed(spec.defaults)) if k not in settings})
-        settings.update({k:v for k, v in spec.kwonlydefaults.items() if k not in settings})
+        if spec.defaults is not None:
+            settings.update({k:v for k, v in zip(reversed(spec.args), reversed(spec.defaults)) if k not in settings})
+        if spec.kwonlydefaults is not None:
+            settings.update({k:v for k, v in spec.kwonlydefaults.items() if k not in settings})
         for k, v in settings.items():
             self.__setattr__(k, v)
         init(*args, **kwargs)

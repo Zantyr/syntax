@@ -1,10 +1,19 @@
+"""
+Random programs that fit nowhere else
+"""
+
+import collections as _collections
 import copy as _copy
 import os as _os
 import pickle as _pickle
 import shutil as _shutil
 import sys as _sys
 import tempfile as _tempfile
+import threading as _threading
+import time as _time
 import zipfile as _zipfile
+
+
 
 from collections import UserDict as _UserDict
 
@@ -62,9 +71,9 @@ def lrange(arg):
 def timer(timed):
     """@timeit but logs instead of printing"""
     def timer_wrapper(*args, **kwargs):
-        start_time = time.time()
+        start_time = _time.time()
         timed(*args, **kwargs)
-        end_time = time.time() - start_time
+        end_time = _time.time() - start_time
         logger.info('%s done in %s seconds', timed.__name__, round(end_time, 2))
     return timer_wrapper
 
@@ -175,3 +184,100 @@ class DotDict(dict):
         if hasattr(self, key):
             return super().__setattr__(self, key, value)
         self[key] = value
+
+
+class StateMachine:
+    """
+    Locking machine that can have decorated callbacks
+    and controls the flow based on some state, that can be accessed by the callback
+    and is lockable.
+    """
+    def __init__(self, states, paths=None):
+        self.lock = _threading.Lock()
+        self._states = states[:]  # this should be property based
+        self._current = self._states[0]
+        self._stack = _collections.deque()  # this should be for holding various data
+        self._legal = paths[:] if paths is not None else None
+        self._on_illegal = None
+        self._on_error = None
+        self._on_enter = {}
+        self._on_leave = {}
+        self._on_path = {}
+
+    @property
+    def state(self):
+        with self.lock:
+            return self._current
+
+    @state.setter
+    def state(self, value):
+        with self.lock:
+            passage = (self._current, value)
+            try:
+                assert value in self._states
+                if self._legal is not None:
+                    assert passage in self._legal
+            except AssertionError:
+                if self._on_illegal is not None:
+                    self._on_illegal(passage)
+            else:
+                try:
+                    on_leave = self._on_leave.get(self._current)
+                    if on_leave is not None:
+                        on_leave(self._stack, value)
+                    on_path = self._on_path.get(passage)
+                    if on_path is not None:
+                        on_path(self._stack)
+                    on_enter = self._on_enter.get(value)
+                    if on_enter is not None:
+                        on_enter(self._stack, self._current)
+                    self._current = value
+                except Exception as error:
+                    self._on_error(self._stack, passage, error)
+
+    def wait_until(self, key):
+        while True:
+            with self.lock:
+                if self._current == key:
+                    break
+            _time.sleep(0)
+
+    def wait_until_not(self, key):
+        while True:
+            with self.lock:
+                if self._current != key:
+                    break
+            time.sleep(0)
+
+    def on_enter(self, key):
+        def wrapper(f):
+            self._on_enter[key] = f
+            return f
+        return wrapper
+
+    def on_leave(self, key):
+        def wrapper(f):
+            self._on_leave[key] = f
+            return f
+        return wrapper
+
+    def on_path(self, vertex):
+        def wrapper(f):
+            self._on_path[key] = f
+            return f
+        return wrapper
+
+    @property
+    def on_error(self):
+        def wrapper(f):
+            self._on_error = f
+            return f
+        return wrapper
+                
+    @property
+    def on_illegal(self):
+        def wrapper(f):
+            self._on_illegal = f
+            return f
+        return wrapper
+

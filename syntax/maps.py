@@ -128,14 +128,16 @@ class DelayedAccessor(Pipeable):
         return DelayedAccessor(lambda x: not self._eval(x))
 
     def __bool__(self):
-        return DelayedAccessor(lambda x: bool(self._eval(x)))
+        raise ValueError("You cannot get a boolean value of DelayedAccessor")
 
     def __extended_syntax(self, v):
-        default = lambda x: self._eval(x).__getattribute__(v)
-        if v == "replace" and isinstance(v, list):
-            return lambda *args: list_replace(x, *args)
+        def default(x):
+            thing = self._eval(x)
+            if v == "replace":
+                if isinstance(thing, list):
+                    return lambda *args: list_replace(thing, *args)
+            return thing.__getattribute__(v)
         return default
-
 
 it = DelayedAccessor(lambda x: x)
 _ = it
