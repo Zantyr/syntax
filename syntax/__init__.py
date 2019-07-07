@@ -44,4 +44,4 @@ from syntax.anon import new
 from syntax.decorators import typed, constructor, Show, implicit
 from syntax.maps import it, _, Pipeable
 from syntax.snip import remote_import
-from syntax.utils import StateMachine, DotDict, TempEnv, PersistentState
+from syntax.utils import StateMachine, DotDict, TempEnv, PersistentState, Invoke

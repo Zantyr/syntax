@@ -281,3 +281,24 @@ class StateMachine:
             return f
         return wrapper
 
+
+
+class Invoke:
+    def __call__(self, args=None):
+        if args is None:
+            args = _sys.argv[1:]
+        if len(args) == 0:
+            return self.help()
+        keys = [x for x in dir(self) if not x.startswith("_")]
+        for k in keys:
+            if k == args[0]:
+                return getattr(self, k)(*args[1:])
+        else:
+            return self.help()
+
+    def help(self):
+        """Print this help"""
+        print(self._about, end="\n\n")
+        keys = [x for x in dir(self) if not x.startswith("_")]
+        for k in keys:
+            print("{} - {}".format(k, getattr(self, k).__doc__))
