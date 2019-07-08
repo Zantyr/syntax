@@ -302,3 +302,15 @@ class Invoke:
         keys = [x for x in dir(self) if not x.startswith("_")]
         for k in keys:
             print("{} - {}".format(k, getattr(self, k).__doc__))
+
+
+class StringBuilder:
+    """
+    Builder of large amount of text from small pieces
+    """
+    def __init__(self, *strings, sep=' ', end='\n'):
+        self.string = ""
+        self.print(*strings, sep=' ', end='\n')
+
+    def print(self, *strings, sep=' ', end='\n'):
+        self.string += sep.join(strings) + end

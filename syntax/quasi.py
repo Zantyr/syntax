@@ -24,3 +24,29 @@ def cpp(program_string, use=None):
         filename = cache.get_path(hash)
         cpp_compile(program_string, filename, use=use)
     return load_so(filename)
+
+def generate_interface(_fun_name, _module_name, arg_dict):
+    """
+    Produces python code to C calls
+    To be integrated to a larger module interface generator
+    """
+    signature = ", ".join([x for x in arg_dict.keys()])
+    sb = StringBuilder()
+    sb.print("def {}({}):".format(_fun_name, signature))
+    sb.print("    mod = ctypes.CDLL('{}')".format(_module_name))
+    sb.print("    fun = mod['{}']".format(_fun_name))
+    sb.print("    cargs = []".format(_fun_name))
+    for var, typ in arg_dict.items():
+        type_func = "ctypes.c_int" # based on typ 
+        type_conversion = "{}({})".format(type_func, var)
+        sb.print("    cargs.append({})".format(type_conversion))
+    sb.print("    return fun(*cargs)")
+    print(sb.string)
+
+
+# tests
+if __name__ == "__main__":
+    generate_interface("addition", "mymod.dll", {
+        "x": "int",
+        "y": "int"
+    })
