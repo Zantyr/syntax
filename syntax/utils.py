@@ -2,6 +2,8 @@
 Random programs that fit nowhere else
 """
 
+from io import _StringIO
+
 import collections as _collections
 import copy as _copy
 import os as _os
@@ -314,3 +316,77 @@ class StringBuilder:
 
     def print(self, *strings, sep=' ', end='\n'):
         self.string += sep.join(strings) + end
+
+
+
+
+class Table:
+    _important_names = ["id", "ID", "tag", "name"]
+    _min_length = 4
+
+    def __init__(self, list_of_dicts, nothing=None):
+        self.nothing = nothing
+        self.columns = {}
+        self.index = []
+        iterator = enumerate(list_of_dicts) if isinstance(list_of_dicts, list) else list_of_dicts.items()
+        for ix, my_dict in iterator:
+            for column, value in my_dict.items():
+                if column not in self.columns:
+                    self.columns[column] = self._new_column()
+                self.columns[column].append(value)
+            if self.index:
+                for column in self.columns:
+                    if column not in my_dict:
+                        self.columns[column].append(self.nothing)
+            self.index.append(ix)
+
+    def _new_column(self):
+        return [self.nothing] * len(self.index)
+
+    def _determine_format(self, all_lines, limit, colnames):
+        max_lens = [self._min_length for _ in colnames]
+        for line in [colnames] + all_lines:
+            for ix, record in enumerate(line):
+                length = len("{}".format(record))
+                max_lens[ix] = max(max_lens[ix], length)
+        if sum(max_lens) + len(max_lens) > limit:
+            columns_to_squeeze = [ix for ix, x in enumerate(colnames)
+                                  if not any(sub in x for sub in self._important_names)]
+            remaining_space = limit - sum(x - 1 for ix, x in enumerate(max_lens) if ix in columns_to_squeeze)
+            if remaining_space > self._min_length * len(columns_to_squeeze):
+                max_lens = [(remaining_space // len(columns_to_squeeze) if flag else maximum)
+                            for maximum, flag in zip(max_lens, columns_to_squeeze)]
+        return "|".join(["{:NUM.NUM}".replace("NUM", str(maximum)) for maximum in max_lens])
+
+    def plot(self, limit=100, column_selection=None):
+        if len(self.index) == 0:
+            return "<Empty Table>"
+        builder = _StringIO()
+        column_selection = column_selection or list(sorted(self.columns,
+                                                           key=lambda x: -1 * (x in self._important_names)))
+        all_lines = []
+        for ix, index in enumerate(self.index):
+            line_items = []
+            for column in column_selection:
+                line_items.append(self.columns[column][ix])
+            all_lines.append(line_items)
+        format_string = self._determine_format(all_lines, limit=limit, colnames=column_selection)
+        try:
+            header = format_string.format(*column_selection)
+        except TypeError:
+            print(format_string)
+            raise
+        builder.write(header + "\n")
+        builder.write("=" * len(header) + "\n")
+        for line in all_lines:
+            builder.write(format_string.format(*[self._show(x) for x in line]) + "\n")
+        return builder.getvalue()
+
+    def _show(self, item):
+        try:
+            item.__format__("{:10.10}")
+            return item
+        except (ValueError, TypeError):
+            if item is None:
+                return ""
+            return str(item)
